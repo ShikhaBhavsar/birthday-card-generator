@@ -6,6 +6,21 @@ import io
 import zipfile
 import tempfile
 
+def get_centered_position(text, font, y_position, template_width):
+    """
+    Calculate the position for centering the text horizontally and placing it at a specific Y position.
+
+    :param text: The text to be centered.
+    :param font: The font object used to draw the text.
+    :param y_position: The Y position where the text should be placed.
+    :param template_width: The width of the template image.
+    :return: The (x, y) position for placing the text.
+    """
+    text_width, text_height = ImageDraw.Draw(Image.new('RGB', (template_width, 1))).textsize(text, font=font)
+    x_position = (template_width - text_width) // 2  # Center horizontally
+    return (x_position, y_position)
+
+
 def generate_birthday_cards(df, template, font_size, name_y_position, business_y_position):
     """Generate birthday cards and return the zip buffer"""
     zip_buffer = io.BytesIO()
