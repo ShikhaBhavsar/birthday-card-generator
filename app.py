@@ -169,7 +169,7 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     st.markdown("##### Font Size")
-    font_size = st.slider("Adjust font size", min_value=30, max_value=150, value=100)
+    font_size = st.slider("Adjust font size", min_value=10, max_value=150, value=25)
 
 with col2:
     st.markdown("##### Name Position")
@@ -202,8 +202,8 @@ if template_image:
         - Height: {Image.open(template_image).height}px
         """)
 
-# Font size adjustment
-font_size = st.slider("Adjust font size", min_value=10, max_value=150, value=25)
+# # Font size adjustment
+# font_size = st.slider("Adjust font size", min_value=10, max_value=150, value=25)
 
 # Generate button
 if excel_file and template_image:
