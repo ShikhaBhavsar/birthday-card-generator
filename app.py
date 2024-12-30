@@ -6,7 +6,6 @@ import io
 import zipfile
 import tempfile
 
-[Previous font loading functions remain the same...]
 
 def generate_birthday_cards(df, template, font_size, name_y_position, business_y_position):
     """Generate birthday cards and return the zip buffer"""
