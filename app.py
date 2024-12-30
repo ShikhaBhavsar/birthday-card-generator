@@ -257,4 +257,4 @@ st.markdown("""
 
 5. **Download**
    - Once generated, click "Download Birthday Cards" to get the ZIP file
-""")"
+""")
