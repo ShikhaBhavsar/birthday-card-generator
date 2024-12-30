@@ -170,17 +170,19 @@ with col1:
     st.markdown("##### Font Size")
     font_size = st.slider("Adjust font size", min_value=10, max_value=150, value=25)
 
-with col2:
-    st.markdown("##### Name Position")
-    name_y_position = st.slider(
-        "Adjust name vertical position",
-        min_value=0,
-        max_value=st.session_state.template_height,
+# Ensure template height is not 0
+if st.session_state.template_height > 0:
+    with col2:
+        st.markdown("##### Name Position")
+        name_y_position = st.slider(
+            "Adjust name vertical position",
+            min_value=0,
+            max_value=st.session_state.template_height,
             value=590 if st.session_state.template_height > 590 else st.session_state.template_height // 2
         )
 else:
     with col2:
-        st.warning("Please upload a valid template image.")    )
+        st.warning("Please upload a valid template image.")
 
 # Create button to generate birthday cards
 if excel_file and template_image:
