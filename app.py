@@ -31,6 +31,7 @@ if excel_file and template_image:
         try:
             font = ImageFont.truetype("Arial-Bold.ttf", size=100)
         except OSError:
+            st.write("************OsError Occured**************\n")
             font = ImageFont.load_default()
 
         def get_centered_position(text, font, y_position, image_width):
