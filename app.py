@@ -16,7 +16,10 @@ def get_centered_position(text, font, y_position, template_width):
     :param template_width: The width of the template image.
     :return: The (x, y) position for placing the text.
     """
-    text_width, text_height = ImageDraw.Draw(Image.new('RGB', (template_width, 1))).textsize(text, font=font)
+    # Get the bounding box of the text
+    bbox = ImageDraw.Draw(Image.new('RGB', (template_width, 1))).textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
     x_position = (template_width - text_width) // 2  # Center horizontally
     return (x_position, y_position)
 
