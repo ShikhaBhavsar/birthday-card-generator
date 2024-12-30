@@ -22,7 +22,7 @@ def generate_birthday_cards(df, template, font_size, name_y_position, business_y
     
     with tempfile.TemporaryDirectory() as output_dir:
         try:
-            # Load bold font with the selected size
+            # Try loading Arial-Bold font, if available in the working directory
             font_path = "Arial-Bold.ttf"  # Replace with correct path if not found
             font = ImageFont.truetype(font_path, size=font_size)
         except OSError as e:
