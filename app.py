@@ -9,31 +9,27 @@ import tempfile
 def get_centered_position(text, font, y_position, template_width):
     """
     Calculate the position for centering the text horizontally and placing it at a specific Y position.
-
-    :param text: The text to be centered.
-    :param font: The font object used to draw the text.
-    :param y_position: The Y position where the text should be placed.
-    :param template_width: The width of the template image.
-    :return: The (x, y) position for placing the text.
     """
-    # Get the bounding box of the text
     bbox = ImageDraw.Draw(Image.new('RGB', (template_width, 1))).textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
     x_position = (template_width - text_width) // 2  # Center horizontally
     return (x_position, y_position)
 
-
 def generate_birthday_cards(df, template, font_size, name_y_position, business_y_position):
     """Generate birthday cards and return the zip buffer"""
     zip_buffer = io.BytesIO()
     
     with tempfile.TemporaryDirectory() as output_dir:
-        # Use the default font
-        font = ImageFont.load_default()
-        template_width = template.width
+        try:
+            # Load bold font with the selected size
+            font_path = "Arial-Bold.ttf"  # Replace with correct path if not found
+            font = ImageFont.truetype(font_path, size=font_size)
+        except OSError as e:
+            st.error(f"Error loading font: {e}. Falling back to default font.")
+            font = ImageFont.load_default()
         
-        # Add a status message
+        template_width = template.width
         status_text = st.empty()
         progress_bar = st.progress(0)
         
@@ -51,7 +47,7 @@ def generate_birthday_cards(df, template, font_size, name_y_position, business_y
             name_position = get_centered_position(name, font, name_y_position, template_width)
             business_position = get_centered_position(f"({business})", font, business_y_position, template_width)
             
-            # Draw text with default font
+            # Draw text with bold font
             draw.text(name_position, name, fill="black", font=font)
             draw.text(business_position, f"({business})", fill="black", font=font)
             
