@@ -180,6 +180,14 @@ if st.session_state.template_height > 0:
             max_value=st.session_state.template_height,
             value=590 if st.session_state.template_height > 590 else st.session_state.template_height // 2
         )
+        
+        st.markdown("##### Business Name Position")
+        business_y_position = st.slider(
+            "Adjust business name vertical position",
+            min_value=0,
+            max_value=st.session_state.template_height,
+            value=700 if st.session_state.template_height > 700 else st.session_state.template_height // 2
+        )
 else:
     with col2:
         st.warning("Please upload a valid template image.")
