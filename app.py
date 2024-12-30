@@ -58,6 +58,30 @@ def get_centered_position(text, font, y_position, image_width):
     text_width = bbox[2] - bbox[0]
     return ((image_width - text_width) // 2, y_position)
 
+def preview_template(template, name, business, font, name_y_position, business_y_position):
+    """Generate a preview of the card with the updated name and business positions"""
+    preview_img = template.copy()
+    draw = ImageDraw.Draw(preview_img)
+
+    # Calculate positions using custom Y positions
+    name_position = get_centered_position(name, font, name_y_position, template.width)
+    business_position = get_centered_position(f"({business})", font, business_y_position, template.width)
+
+    # Draw text with stroke for extra boldness if using default font
+    if font == ImageFont.load_default():
+        # Draw text multiple times with slight offsets for bold effect
+        for offset in [(0, 0), (0, 1), (1, 0), (1, 1)]:
+            x, y = name_position
+            draw.text((x + offset[0], y + offset[1]), name, fill="black", font=font)
+            x, y = business_position
+            draw.text((x + offset[0], y + offset[1]), f"({business})", fill="black", font=font)
+    else:
+        # Draw text normally if using a bold font
+        draw.text(name_position, name, fill="black", font=font)
+        draw.text(business_position, f"({business})", fill="black", font=font)
+
+    return preview_img
+
 def generate_birthday_cards(df, template, font_size, name_y_position, business_y_position):
     """Generate birthday cards and return the zip buffer"""
     zip_buffer = io.BytesIO()
@@ -188,6 +212,13 @@ if st.session_state.template_height > 0:
             max_value=st.session_state.template_height,
             value=700 if st.session_state.template_height > 700 else st.session_state.template_height // 2
         )
+
+    # Preview the adjustments on the template image
+    if template_image:
+        template = Image.open(template_image)
+        font = load_bold_font(font_size)
+        preview_image = preview_template(template, "Happy Birthday", "My Business", font, name_y_position, business_y_position)
+        st.image(preview_image, caption="Preview of the Template", use_column_width=True)
 else:
     with col2:
         st.warning("Please upload a valid template image.")
