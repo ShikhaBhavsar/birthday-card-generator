@@ -129,7 +129,7 @@ if template_image is not None:
     st.markdown("### Template Preview")
     col1, col2 = st.columns([1, 2])
     with col1:
-        st.image(template_image, caption="Template Image", use_column_width=True)
+        st.image(template_image, caption="Template Image", use_container_width=True)
         st.markdown(f"""
         **Image Dimensions:**
         - Width: {img_width}px
