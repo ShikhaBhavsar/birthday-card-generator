@@ -6,6 +6,16 @@ import io
 import zipfile
 import tempfile
 
+def load_bold_font(font_size):
+    try:
+        # Adjust the path to the bold font file as needed
+        font_path = "path/to/bold-font.ttf"
+        font = ImageFont.truetype(font_path, font_size)
+        return font
+    except IOError:
+        # Handle case where font file is not found
+        st.error("Font file not found. Please provide a valid path to the font.")
+        raise
 
 def generate_birthday_cards(df, template, font_size, name_y_position, business_y_position):
     """Generate birthday cards and return the zip buffer"""
