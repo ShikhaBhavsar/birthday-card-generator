@@ -6,22 +6,43 @@ import io
 import zipfile
 import tempfile
 
-def load_default_font(size):
-    """Load a default font that's likely to be available on most systems"""
+def load_bold_font(size):
+    """Load a bold font that's likely to be available on most systems"""
     try:
-        # Try different system fonts in order of preference
-        font_options = [
-            "DejaVuSans.ttf",
-            "Arial.ttf",
-            "Helvetica.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux path
-            "/System/Library/Fonts/Helvetica.ttc",  # MacOS path
-            "C:\\Windows\\Fonts\\arial.ttf"  # Windows path
+        # Try different bold system fonts in order of preference
+        bold_font_options = [
+            "Arial-Bold.ttf",
+            "ArialBD.ttf",  # Windows Arial Bold
+            "DejaVuSans-Bold.ttf",
+            "Helvetica-Bold.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Linux path
+            "/System/Library/Fonts/Helvetica-Bold.ttc",  # MacOS path
+            "C:\\Windows\\Fonts\\arialbd.ttf"  # Windows path
         ]
         
-        for font_path in font_options:
+        for font_path in bold_font_options:
             try:
                 return ImageFont.truetype(font_path, size=size)
+            except OSError:
+                continue
+        
+        # If no bold fonts work, try regular fonts
+        regular_font_options = [
+            "Arial.ttf",
+            "DejaVuSans.ttf",
+            "Helvetica.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+            "C:\\Windows\\Fonts\\arial.ttf"
+        ]
+        
+        for font_path in regular_font_options:
+            try:
+                font = ImageFont.truetype(font_path, size=size)
+                # Some PIL versions support font.font.style
+                if hasattr(font, 'font') and hasattr(font.font, 'style'):
+                    font.font.style = 'bold'
+                return font
             except OSError:
                 continue
                 
@@ -36,6 +57,70 @@ def get_centered_position(text, font, y_position, image_width):
     bbox = font.getbbox(text)
     text_width = bbox[2] - bbox[0]
     return ((image_width - text_width) // 2, y_position)
+
+def generate_birthday_cards(df, template, font_size):
+    """Generate birthday cards and return the zip buffer"""
+    zip_buffer = io.BytesIO()
+    
+    with tempfile.TemporaryDirectory() as output_dir:
+        # Load bold font
+        font = load_bold_font(font_size)
+        template_width = template.width
+        
+        # Add a status message
+        status_text = st.empty()
+        progress_bar = st.progress(0)
+        
+        # Generate images
+        for i, row in df.iterrows():
+            status_text.text(f"Processing card {i+1} of {len(df)}: {row['Owner Name']}")
+            
+            name = row['Owner Name']
+            business = row['Business Name']
+            
+            img = template.copy()
+            draw = ImageDraw.Draw(img)
+            
+            # Calculate positions
+            name_position = get_centered_position(name, font, 590, template_width)
+            business_position = get_centered_position(f"({business})", font, 660, template_width)
+            
+            # Draw text with stroke for extra boldness if using default font
+            if font == ImageFont.load_default():
+                # Draw text multiple times with slight offsets for bold effect
+                for offset in [(0, 0), (0, 1), (1, 0), (1, 1)]:
+                    x, y = name_position
+                    draw.text((x + offset[0], y + offset[1]), name, fill="black", font=font)
+                    x, y = business_position
+                    draw.text((x + offset[0], y + offset[1]), f"({business})", fill="black", font=font)
+            else:
+                # Draw text normally if using a bold font
+                draw.text(name_position, name, fill="black", font=font)
+                draw.text(business_position, f"({business})", fill="black", font=font)
+            
+            # Save image
+            output_file = os.path.join(output_dir, f"{name.replace(' ', '_')}_birthday.png")
+            img.save(output_file)
+            
+            # Update progress
+            progress_bar.progress((i + 1) / len(df))
+        
+        # Create zip file
+        with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
+            for root, dirs, files in os.walk(output_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    zip_file.write(file_path, os.path.basename(file_path))
+    
+    status_text.empty()
+    progress_bar.empty()
+    return zip_buffer
+
+# Initialize session state
+if 'zip_buffer' not in st.session_state:
+    st.session_state.zip_buffer = None
+if 'generated' not in st.session_state:
+    st.session_state.generated = False
 
 # Set page config
 st.set_page_config(page_title="Birthday Card Generator", layout="wide")
@@ -74,80 +159,45 @@ with col2:
     )
 
 # Font size adjustment
-font_size = st.slider("Adjust font size", min_value=30, max_value=150, value=100)
+font_size = st.slider("Adjust font size", min_value=15, max_value=150, value=25)
 
+# Generate button
 if excel_file and template_image:
-    try:
-        # Read Excel data
-        df = pd.read_excel(excel_file)
-        
-        # Validate columns
-        required_columns = {'Owner Name', 'Business Name'}
-        if not required_columns.issubset(df.columns):
-            missing_cols = required_columns - set(df.columns)
-            st.error(f"Missing required columns: {', '.join(missing_cols)}")
-            st.stop()
+    if st.button("Generate Birthday Cards"):
+        try:
+            # Read Excel data
+            df = pd.read_excel(excel_file)
             
-        # Load template
-        template = Image.open(template_image)
-        template_width = template.width
-        
-        # Load font
-        font = load_default_font(font_size)
-        
-        # Create temporary directory
-        with tempfile.TemporaryDirectory() as output_dir:
-            # Add a status message
-            status_text = st.empty()
-            progress_bar = st.progress(0)
+            # Validate columns
+            required_columns = {'Owner Name', 'Business Name'}
+            if not required_columns.issubset(df.columns):
+                missing_cols = required_columns - set(df.columns)
+                st.error(f"Missing required columns: {', '.join(missing_cols)}")
+                st.stop()
             
-            # Generate images
-            for i, row in df.iterrows():
-                status_text.text(f"Processing card {i+1} of {len(df)}: {row['Owner Name']}")
-                
-                name = row['Owner Name']
-                business = row['Business Name']
-                
-                img = template.copy()
-                draw = ImageDraw.Draw(img)
-                
-                # Calculate positions
-                name_position = get_centered_position(name, font, 590, template_width)
-                business_position = get_centered_position(f"({business})", font, 660, template_width)
-                
-                # Draw text
-                draw.text(name_position, name, fill="black", font=font)
-                draw.text(business_position, f"({business})", fill="black", font=font)
-                
-                # Save image
-                output_file = os.path.join(output_dir, f"{name.replace(' ', '_')}_birthday.png")
-                img.save(output_file)
-                
-                # Update progress
-                progress_bar.progress((i + 1) / len(df))
+            # Load template
+            template = Image.open(template_image)
             
-            # Create zip file
-            zip_buffer = io.BytesIO()
-            with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
-                for root, dirs, files in os.walk(output_dir):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        zip_file.write(file_path, os.path.basename(file_path))
+            # Generate cards and store in session state
+            zip_buffer = generate_birthday_cards(df, template, font_size)
+            st.session_state.zip_buffer = zip_buffer.getvalue()
+            st.session_state.generated = True
             
             # Success message
             st.success("✅ All cards generated successfully!")
-            
-            # Download button
-            st.download_button(
-                label="📥 Download Birthday Cards",
-                data=zip_buffer.getvalue(),
-                file_name="birthday_cards.zip",
-                mime="application/zip"
-            )
 
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
-        st.stop()
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+            st.stop()
+
+# Download button (only shows if cards have been generated)
+if st.session_state.generated and st.session_state.zip_buffer:
+    st.download_button(
+        label="📥 Download Birthday Cards",
+        data=st.session_state.zip_buffer,
+        file_name="birthday_cards.zip",
+        mime="application/zip"
+    )
 
 # Instructions section
 st.markdown("""
@@ -165,6 +215,9 @@ st.markdown("""
 3. **Adjust Font Size**
    - Use the slider to adjust text size as needed
 
-4. **Download**
-   - Click the download button to get a ZIP file with all generated cards
+4. **Generate Cards**
+   - Click "Generate Birthday Cards" to create all cards
+
+5. **Download**
+   - Once generated, click "Download Birthday Cards" to get the ZIP file
 """)
