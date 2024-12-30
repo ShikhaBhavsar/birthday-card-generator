@@ -6,13 +6,7 @@ import io
 import zipfile
 import tempfile
 
-# [Previous load_bold_font function remains exactly the same]
-
-def get_centered_position(text, font, y_position, image_width):
-    """Calculate the centered position for text"""
-    bbox = font.getbbox(text)
-    text_width = bbox[2] - bbox[0]
-    return ((image_width - text_width) // 2, y_position)
+[Previous font loading functions remain the same...]
 
 def generate_birthday_cards(df, template, font_size, name_y_position, business_y_position):
     """Generate birthday cards and return the zip buffer"""
@@ -77,8 +71,6 @@ if 'zip_buffer' not in st.session_state:
     st.session_state.zip_buffer = None
 if 'generated' not in st.session_state:
     st.session_state.generated = False
-if 'template_height' not in st.session_state:
-    st.session_state.template_height = 0
 
 # Set page config
 st.set_page_config(page_title="Birthday Card Generator", layout="wide")
@@ -116,45 +108,49 @@ with col2:
         type=['png', 'jpg', 'jpeg']
     )
 
-# Update template height when image is uploaded
-if template_image:
+# Font size adjustment
+font_size = st.slider("Adjust font size", min_value=15, max_value=150, value=100)
+
+# Only show position adjustments if template is uploaded
+if template_image is not None:
+    # Get template dimensions
     img = Image.open(template_image)
-    st.session_state.template_height = img.height
-
-# Create three columns for adjustments
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    font_size = st.slider("Adjust font size", min_value=15, max_value=150, value=100)
-
-with col2:
-    name_y_position = st.slider(
-        "Adjust name vertical position",
-        min_value=0,
-        max_value=st.session_state.template_height,
-        value=590 if st.session_state.template_height > 590 else st.session_state.template_height // 2
-    )
-
-with col3:
-    business_y_position = st.slider(
-        "Adjust business name vertical position",
-        min_value=0,
-        max_value=st.session_state.template_height,
-        value=660 if st.session_state.template_height > 660 else (st.session_state.template_height * 2) // 3
-    )
-
-# Preview section
-if template_image:
-    st.markdown("### Preview")
-    col1, col2 = st.columns([1, 2])
+    img_height = img.height
+    img_width = img.width
     
+    # Show template preview and dimensions
+    st.markdown("### Template Preview")
+    col1, col2 = st.columns([1, 2])
     with col1:
         st.image(template_image, caption="Template Image", use_column_width=True)
         st.markdown(f"""
         **Image Dimensions:**
-        - Width: {Image.open(template_image).width}px
-        - Height: {Image.open(template_image).height}px
+        - Width: {img_width}px
+        - Height: {img_height}px
         """)
+    
+    # Create two columns for position adjustments
+    pos_col1, pos_col2 = st.columns(2)
+    
+    with pos_col1:
+        name_y_position = st.slider(
+            "Adjust name vertical position",
+            min_value=0,
+            max_value=img_height,
+            value=min(590, img_height // 2)
+        )
+    
+    with pos_col2:
+        business_y_position = st.slider(
+            "Adjust business name vertical position",
+            min_value=0,
+            max_value=img_height,
+            value=min(660, int(img_height * 0.7))
+        )
+else:
+    # Set default values when no template is uploaded
+    name_y_position = 590
+    business_y_position = 660
 
 # Generate button
 if excel_file and template_image:
