@@ -188,7 +188,7 @@ with col1:
         template = Image.open(template_image)
         font = load_bold_font(25)  # Default font size
         preview_image = preview_template(template, "Happy Birthday", "My Business", font, 590, 700)  # Default positions
-        st.image(preview_image, caption="Preview of the Template", use_column_width=True)
+        st.image(preview_image, caption="Preview of the Template", use_container_width=True)  # Updated here
 
 # Column 2 - Display sliders for adjustments
 with col2:
@@ -255,28 +255,4 @@ if st.session_state.generated and st.session_state.zip_buffer:
         label="📥 Download Birthday Cards",
         data=st.session_state.zip_buffer,
         file_name="birthday_cards.zip",
-        mime="application/zip"
-    )
-
-# Instructions section
-st.markdown("""
----
-### 📝 Instructions
-
-1. **Upload Excel File**
-   - Must contain columns 'Owner Name' and 'Business Name'
-   - File should be in .xlsx format
-
-2. **Upload Template Image**
-   - Supported formats: PNG, JPG, JPEG
-   - Make sure the template has space for the text
-
-3. **Adjust Font Size**
-   - Use the slider to adjust text size as needed
-
-4. **Generate Cards**
-   - Click "Generate Birthday Cards" to create all cards
-
-5. **Download**
-   - Once generated, click "Download Birthday Cards" to get the ZIP file
-""")
+        mime="application/
