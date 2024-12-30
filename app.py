@@ -176,8 +176,11 @@ with col2:
         "Adjust name vertical position",
         min_value=0,
         max_value=st.session_state.template_height,
-        value=590 if st.session_state.template_height > 590 else st.session_state.template_height // 2
-    )
+            value=590 if st.session_state.template_height > 590 else st.session_state.template_height // 2
+        )
+else:
+    with col2:
+        st.warning("Please upload a valid template image.")    )
 
 # Create button to generate birthday cards
 if excel_file and template_image:
