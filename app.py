@@ -127,7 +127,6 @@ if 'template_height' not in st.session_state:
 # Set page config
 st.set_page_config(page_title="Birthday Card Generator", layout="wide")
 
-
 # Add custom CSS for better styling
 st.markdown("""
     <style>
@@ -164,8 +163,8 @@ if template_image:
     img = Image.open(template_image)
     st.session_state.template_height = img.height
 
-# Create three columns for adjustments
-col1, col2, col3 = st.columns(3)
+# Create two columns for adjustments
+col1, col2 = st.columns(2)
 
 with col1:
     st.markdown("##### Font Size")
@@ -180,32 +179,7 @@ with col2:
         value=590 if st.session_state.template_height > 590 else st.session_state.template_height // 2
     )
 
-with col3:
-    st.markdown("##### Business Name Position")
-    business_y_position = st.slider(
-        "Adjust business name vertical position",
-        min_value=0,
-        max_value=st.session_state.template_height,
-        value=660 if st.session_state.template_height > 660 else (st.session_state.template_height * 2) // 3
-    )
-
-# Preview section
-if template_image:
-    st.markdown("### Preview")
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        st.image(template_image, caption="Template Image", use_column_width=True)
-        st.markdown(f"""
-        **Image Dimensions:**
-        - Width: {Image.open(template_image).width}px
-        - Height: {Image.open(template_image).height}px
-        """)
-
-# # Font size adjustment
-# font_size = st.slider("Adjust font size", min_value=10, max_value=150, value=25)
-
-# Generate button
+# Create button to generate birthday cards
 if excel_file and template_image:
     if st.button("Generate Birthday Cards"):
         try:
