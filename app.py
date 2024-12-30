@@ -29,7 +29,7 @@ if excel_file and template_image:
     with tempfile.TemporaryDirectory() as output_dir:
         # Font setup
         try:
-            font = ImageFont.truetype("Arial-Bold.ttf", size=32)
+            font = ImageFont.truetype("Arial-Bold.ttf", size=100)
         except OSError:
             font = ImageFont.load_default()
 
