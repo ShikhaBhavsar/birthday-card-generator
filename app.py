@@ -6,24 +6,13 @@ import io
 import zipfile
 import tempfile
 
-def load_bold_font(font_size):
-    try:
-        # Adjust the path to the bold font file as needed
-        font_path = "path/to/bold-font.ttf"
-        font = ImageFont.truetype(font_path, font_size)
-        return font
-    except IOError:
-        # Handle case where font file is not found
-        st.error("Font file not found. Please provide a valid path to the font.")
-        raise
-
 def generate_birthday_cards(df, template, font_size, name_y_position, business_y_position):
     """Generate birthday cards and return the zip buffer"""
     zip_buffer = io.BytesIO()
     
     with tempfile.TemporaryDirectory() as output_dir:
-        # Load bold font
-        font = load_bold_font(font_size)
+        # Use the default font
+        font = ImageFont.load_default()
         template_width = template.width
         
         # Add a status message
@@ -44,18 +33,9 @@ def generate_birthday_cards(df, template, font_size, name_y_position, business_y
             name_position = get_centered_position(name, font, name_y_position, template_width)
             business_position = get_centered_position(f"({business})", font, business_y_position, template_width)
             
-            # Draw text with stroke for extra boldness if using default font
-            if font == ImageFont.load_default():
-                # Draw text multiple times with slight offsets for bold effect
-                for offset in [(0, 0), (0, 1), (1, 0), (1, 1)]:
-                    x, y = name_position
-                    draw.text((x + offset[0], y + offset[1]), name, fill="black", font=font)
-                    x, y = business_position
-                    draw.text((x + offset[0], y + offset[1]), f"({business})", fill="black", font=font)
-            else:
-                # Draw text normally if using a bold font
-                draw.text(name_position, name, fill="black", font=font)
-                draw.text(business_position, f"({business})", fill="black", font=font)
+            # Draw text with default font
+            draw.text(name_position, name, fill="black", font=font)
+            draw.text(business_position, f"({business})", fill="black", font=font)
             
             # Save image
             output_file = os.path.join(output_dir, f"{name.replace(' ', '_')}_birthday.png")
