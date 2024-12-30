@@ -164,10 +164,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state for font_size if not already set
-if 'font_size' not in st.session_state:
-    st.session_state.font_size = 25  # Default font size
-
 # Main title with styling
 st.title("🎂 Birthday Card Generator")
 
@@ -186,15 +182,12 @@ with col2:
         "Select your birthday card template",
         type=['png', 'jpg', 'jpeg']
     )
-
-
-#Preview the adjustments on the template image with a smaller width
+# Preview the adjustments on the template image with a smaller width
 if template_image:
     template = Image.open(template_image)
     font = load_bold_font(font_size)
     preview_image = preview_template(template, "Happy Birthday", "My Business", font, name_y_position, business_y_position)
-    st.image(preview_image, caption="Preview of the Template", width=600)  # Set a fixed width for smaller preview
-
+    st.image(preview_image, caption="Preview of the Template", height=400)  # Set a fixed height for smaller preview
 
 # Create two columns for adjustments
 col1, col2 = st.columns(2)
@@ -221,6 +214,16 @@ if st.session_state.template_height > 0:
             max_value=st.session_state.template_height,
             value=700 if st.session_state.template_height > 700 else st.session_state.template_height // 2
         )
+
+    # Preview the adjustments on the template image
+    if template_image:
+        template = Image.open(template_image)
+        font = load_bold_font(font_size)
+        preview_image = preview_template(template, "Happy Birthday", "My Business", font, name_y_position, business_y_position)
+        st.image(preview_image, caption="Preview of the Template", use_column_width=True)
+else:
+    with col2:
+        st.warning("Please upload a valid template image.")
 
 # Create button to generate birthday cards
 if excel_file and template_image:
@@ -288,3 +291,4 @@ st.markdown("""
 5. **Download**
    - Once generated, click "Download Birthday Cards" to get the ZIP file
 """)
+
