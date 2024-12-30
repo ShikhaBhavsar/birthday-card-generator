@@ -213,12 +213,13 @@ if st.session_state.template_height > 0:
             value=700 if st.session_state.template_height > 700 else st.session_state.template_height // 2
         )
 
-    # Preview the adjustments on the template image
+    # Preview the adjustments on the template image with a smaller width
     if template_image:
         template = Image.open(template_image)
         font = load_bold_font(font_size)
         preview_image = preview_template(template, "Happy Birthday", "My Business", font, name_y_position, business_y_position)
-        st.image(preview_image, caption="Preview of the Template", use_container_width=True)  # Updated line
+        st.image(preview_image, caption="Preview of the Template", width=600)  # Set a fixed width for smaller preview
+
 else:
     with col2:
         st.warning("Please upload a valid template image.")
