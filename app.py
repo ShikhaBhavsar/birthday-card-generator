@@ -218,7 +218,7 @@ if st.session_state.template_height > 0:
         template = Image.open(template_image)
         font = load_bold_font(font_size)
         preview_image = preview_template(template, "Happy Birthday", "My Business", font, name_y_position, business_y_position)
-        st.image(preview_image, caption="Preview of the Template", use_column_width=True)
+        st.image(preview_image, caption="Preview of the Template", use_container_width=True)  # Updated line
 else:
     with col2:
         st.warning("Please upload a valid template image.")
