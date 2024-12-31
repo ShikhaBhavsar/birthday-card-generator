@@ -190,11 +190,13 @@ with col3:
         value=660 if st.session_state.template_height > 660 else (st.session_state.template_height * 2) // 3
     )
 
-# Preview section
+# Preview the adjustments on the template image with a smaller width
 if template_image:
-    st.markdown("### Preview")
-    col1, col2 = st.columns([1, 2])
-    
+    template = Image.open(template_image)
+    font = load_bold_font(font_size)
+    preview_image = preview_template(template, "Happy Birthday", "My Business", font, name_y_position, business_y_position)
+    st.image(preview_image, caption="Preview of the Template", width=600)  # Set a fixed width for smaller preview
+
     with col1:
         st.image(template_image, caption="Template Image", use_column_width=True)
         st.markdown(f"""
