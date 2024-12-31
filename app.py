@@ -58,6 +58,30 @@ def get_centered_position(text, font, y_position, image_width):
     text_width = bbox[2] - bbox[0]
     return ((image_width - text_width) // 2, y_position)
 
+def preview_template(template, name, business, font, name_y_position, business_y_position):
+    """Generate a preview of the card with the updated name and business positions"""
+    preview_img = template.copy()
+    draw = ImageDraw.Draw(preview_img)
+
+    # Calculate positions using custom Y positions
+    name_position = get_centered_position(name, font, name_y_position, template.width)
+    business_position = get_centered_position(f"({business})", font, business_y_position, template.width)
+
+    # Draw text with stroke for extra boldness if using default font
+    if font == ImageFont.load_default():
+        # Draw text multiple times with slight offsets for bold effect
+        for offset in [(0, 0), (0, 1), (1, 0), (1, 1)]:
+            x, y = name_position
+            draw.text((x + offset[0], y + offset[1]), name, fill="black", font=font)
+            x, y = business_position
+            draw.text((x + offset[0], y + offset[1]), f"({business})", fill="black", font=font)
+    else:
+        # Draw text normally if using a bold font
+        draw.text(name_position, name, fill="black", font=font)
+        draw.text(business_position, f"({business})", fill="black", font=font)
+
+    return preview_img
+
 def generate_birthday_cards(df, template, font_size, name_y_position, business_y_position):
     """Generate birthday cards and return the zip buffer"""
     zip_buffer = io.BytesIO()
@@ -145,7 +169,6 @@ st.title("🎂 Birthday Card Generator")
 
 # Create two columns for uploads
 col1, col2 = st.columns(2)
-
 with col1:
     st.markdown('<p class="upload-text">1. Upload Excel File</p>', unsafe_allow_html=True)
     excel_file = st.file_uploader(
@@ -159,58 +182,62 @@ with col2:
         "Select your birthday card template",
         type=['png', 'jpg', 'jpeg']
     )
-
-# Update template height when image is uploaded
 # Update template height when image is uploaded
 if template_image:
     img = Image.open(template_image)
     st.session_state.template_height = img.height
 
-# Create three columns for adjustments
-col1, col2, col3 = st.columns(3)
+# Create two columns for adjustments
+col1, col2 = st.columns(2)
 
 with col1:
     st.markdown("##### Font Size")
-    font_size = st.slider("Adjust font size", min_value=30, max_value=150, value=100)
+    font_size = st.slider("Adjust font size", min_value=10, max_value=150, value=25)
 
-with col2:
-    st.markdown("##### Name Position")
-    name_y_position = st.slider(
-        "Adjust name vertical position",
-        min_value=0,
-        max_value=st.session_state.template_height,
-        value=590 if st.session_state.template_height > 590 else st.session_state.template_height // 2
-    )
-
-with col3:
-    st.markdown("##### Business Name Position")
-    business_y_position = st.slider(
-        "Adjust business name vertical position",
-        min_value=0,
-        max_value=st.session_state.template_height,
-        value=660 if st.session_state.template_height > 660 else (st.session_state.template_height * 2) // 3
-    )
-
-# Preview the adjustments on the template image with a smaller width
+# Ensure template height is not 0
 if template_image:
-    template = Image.open(template_image)
-    font = load_bold_font(font_size)
-    preview_image = preview_template(template, "Happy Birthday", "My Business", font, name_y_position, business_y_position)
-    st.image(preview_image, caption="Preview of the Template", width=600)  # Set a fixed width for smaller preview
+    try:
+        img = Image.open(template_image)
+        st.session_state.template_height = img.height
+        
+        with col2:
+            st.markdown("##### Name Position")
+            name_y_position = st.slider(
+                "Adjust name vertical position",
+                min_value=0,
+                max_value=st.session_state.template_height,
+                value=590 if st.session_state.template_height > 590 else st.session_state.template_height // 2
+            )
 
-    with col1:
-        st.image(template_image, caption="Template Image", use_column_width=True)
-        st.markdown(f"""
-        **Image Dimensions:**
-        - Width: {Image.open(template_image).width}px
-        - Height: {Image.open(template_image).height}px
-        """)
+            st.markdown("##### Business Name Position")
+            business_y_position = st.slider(
+                "Adjust business name vertical position",
+                min_value=0,
+                max_value=st.session_state.template_height,
+                value=700 if st.session_state.template_height > 700 else st.session_state.template_height // 2
+            )
+
+        # Preview the adjustments on the template image
+        template = Image.open(template_image)
+        font = load_bold_font(font_size)
+        preview_image = preview_template(
+            template, 
+            "Happy Birthday", 
+            "My Business", 
+            font, 
+            name_y_position, 
+            business_y_position
+        )
+        st.image(preview_image, caption="Preview of the Template", width=600)  # Set a fixed width for smaller preview
+    
+    except Exception as e:
+        st.error(f"Error reading template image: {str(e)}")
+else:
+    with col2:
+        st.warning("Please upload a valid template image to enable position sliders.")
 
 
-# Font size adjustment
-font_size = st.slider("Adjust font size", min_value=30, max_value=150, value=100)
-
-# Generate button
+# Create button to generate birthday cards
 if excel_file and template_image:
     if st.button("Generate Birthday Cards"):
         try:
@@ -244,7 +271,6 @@ if excel_file and template_image:
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
             st.stop()
-
 
 # Download button (only shows if cards have been generated)
 if st.session_state.generated and st.session_state.zip_buffer:
