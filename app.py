@@ -117,7 +117,7 @@ def generate_birthday_cards(df, templates, font_size, template_positions):
                 draw.text(name_position, name, fill="black", font=font)
                 draw.text(business_position, f"({business})", fill="black", font=font)
             
-            output_file = os.path.join(output_dir, f"{name.replace(' ', '_')}_birthday.png")
+            output_file = os.path.join(output_dir, f"{business.replace(' ', '_')}_birthday.png")
             img.save(output_file)
             
             progress_bar.progress((i + 1) / len(df))
