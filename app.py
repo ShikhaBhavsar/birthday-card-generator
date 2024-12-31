@@ -161,12 +161,10 @@ with col2:
     )
 
 # Update template height when image is uploaded
+# Update template height when image is uploaded
 if template_image:
-    template = Image.open(template_image)
-    font = load_bold_font(font_size)
-    preview_image = preview_template(template, "Happy Birthday", "My Business", font, name_y_position, business_y_position)
-    st.image(preview_image, caption="Preview of the Template", width=600)  # Set a fixed width for smaller preview
-
+    img = Image.open(template_image)
+    st.session_state.template_height = img.height
 
 # Create three columns for adjustments
 col1, col2, col3 = st.columns(3)
