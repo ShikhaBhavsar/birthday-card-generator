@@ -6,7 +6,57 @@ import io
 import zipfile
 import tempfile
 
-# ... (keep the existing load_bold_font, get_centered_position functions as they are) ...
+def load_bold_font(size):
+    """Load a bold font that's likely to be available on most systems"""
+    try:
+        # Try different bold system fonts in order of preference
+        bold_font_options = [
+            "Arial-Bold.ttf",
+            "ArialBD.ttf",  # Windows Arial Bold
+            "DejaVuSans-Bold.ttf",
+            "Helvetica-Bold.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Linux path
+            "/System/Library/Fonts/Helvetica-Bold.ttc",  # MacOS path
+            "C:\\Windows\\Fonts\\arialbd.ttf"  # Windows path
+        ]
+        
+        for font_path in bold_font_options:
+            try:
+                return ImageFont.truetype(font_path, size=size)
+            except OSError:
+                continue
+        
+        # If no bold fonts work, try regular fonts
+        regular_font_options = [
+            "Arial.ttf",
+            "DejaVuSans.ttf",
+            "Helvetica.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+            "C:\\Windows\\Fonts\\arial.ttf"
+        ]
+        
+        for font_path in regular_font_options:
+            try:
+                font = ImageFont.truetype(font_path, size=size)
+                # Some PIL versions support font.font.style
+                if hasattr(font, 'font') and hasattr(font.font, 'style'):
+                    font.font.style = 'bold'
+                return font
+            except OSError:
+                continue
+                
+        # If no system fonts work, use PIL's default font
+        return ImageFont.load_default()
+    except Exception as e:
+        st.warning(f"Using basic font due to: {str(e)}")
+        return ImageFont.load_default()
+
+def get_centered_position(text, font, y_position, image_width):
+    """Calculate the centered position for text"""
+    bbox = font.getbbox(text)
+    text_width = bbox[2] - bbox[0]
+    return ((image_width - text_width) // 2, y_position)
 
 def preview_template(template, name, business, font, positions):
     """Generate a preview of the card with the updated name and business positions"""
@@ -215,7 +265,7 @@ if st.session_state.generated and st.session_state.zip_buffer:
         mime="application/zip"
     )
 
-# Updated instructions
+# Instructions
 st.markdown("""
 ---
 ### 📝 Instructions
