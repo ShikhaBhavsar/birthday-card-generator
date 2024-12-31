@@ -6,98 +6,47 @@ import io
 import zipfile
 import tempfile
 
-def load_bold_font(size):
-    """Load a bold font that's likely to be available on most systems"""
-    try:
-        # Try different bold system fonts in order of preference
-        bold_font_options = [
-            "Arial-Bold.ttf",
-            "ArialBD.ttf",  # Windows Arial Bold
-            "DejaVuSans-Bold.ttf",
-            "Helvetica-Bold.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Linux path
-            "/System/Library/Fonts/Helvetica-Bold.ttc",  # MacOS path
-            "C:\\Windows\\Fonts\\arialbd.ttf"  # Windows path
-        ]
-        
-        for font_path in bold_font_options:
-            try:
-                return ImageFont.truetype(font_path, size=size)
-            except OSError:
-                continue
-        
-        # If no bold fonts work, try regular fonts
-        regular_font_options = [
-            "Arial.ttf",
-            "DejaVuSans.ttf",
-            "Helvetica.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            "/System/Library/Fonts/Helvetica.ttc",
-            "C:\\Windows\\Fonts\\arial.ttf"
-        ]
-        
-        for font_path in regular_font_options:
-            try:
-                font = ImageFont.truetype(font_path, size=size)
-                # Some PIL versions support font.font.style
-                if hasattr(font, 'font') and hasattr(font.font, 'style'):
-                    font.font.style = 'bold'
-                return font
-            except OSError:
-                continue
-                
-        # If no system fonts work, use PIL's default font
-        return ImageFont.load_default()
-    except Exception as e:
-        st.warning(f"Using basic font due to: {str(e)}")
-        return ImageFont.load_default()
+# ... (keep the existing load_bold_font, get_centered_position functions as they are) ...
 
-def get_centered_position(text, font, y_position, image_width):
-    """Calculate the centered position for text"""
-    bbox = font.getbbox(text)
-    text_width = bbox[2] - bbox[0]
-    return ((image_width - text_width) // 2, y_position)
-
-def preview_template(template, name, business, font, name_y_position, business_y_position):
+def preview_template(template, name, business, font, positions):
     """Generate a preview of the card with the updated name and business positions"""
     preview_img = template.copy()
     draw = ImageDraw.Draw(preview_img)
 
-    # Calculate positions using custom Y positions
-    name_position = get_centered_position(name, font, name_y_position, template.width)
-    business_position = get_centered_position(f"({business})", font, business_y_position, template.width)
+    name_position = get_centered_position(name, font, positions['name_y'], template.width)
+    business_position = get_centered_position(f"({business})", font, positions['business_y'], template.width)
 
-    # Draw text with stroke for extra boldness if using default font
     if font == ImageFont.load_default():
-        # Draw text multiple times with slight offsets for bold effect
         for offset in [(0, 0), (0, 1), (1, 0), (1, 1)]:
             x, y = name_position
             draw.text((x + offset[0], y + offset[1]), name, fill="black", font=font)
             x, y = business_position
             draw.text((x + offset[0], y + offset[1]), f"({business})", fill="black", font=font)
     else:
-        # Draw text normally if using a bold font
         draw.text(name_position, name, fill="black", font=font)
         draw.text(business_position, f"({business})", fill="black", font=font)
 
     return preview_img
 
-def generate_birthday_cards(df, template, font_size, name_y_position, business_y_position):
-    """Generate birthday cards and return the zip buffer"""
+def generate_birthday_cards(df, templates, font_size, template_positions):
+    """Generate birthday cards using multiple templates"""
     zip_buffer = io.BytesIO()
     
     with tempfile.TemporaryDirectory() as output_dir:
-        # Load bold font
         font = load_bold_font(font_size)
-        template_width = template.width
         
-        # Add a status message
         status_text = st.empty()
         progress_bar = st.progress(0)
         
-        # Generate images
+        num_templates = len(templates)
+        
         for i, row in df.iterrows():
             status_text.text(f"Processing card {i+1} of {len(df)}: {row['Owner Name']}")
+            
+            # Select template based on index (cycling through templates)
+            template_index = i % num_templates
+            template = templates[template_index]
+            positions = template_positions[template_index]
             
             name = row['Owner Name']
             business = row['Business Name']
@@ -105,31 +54,24 @@ def generate_birthday_cards(df, template, font_size, name_y_position, business_y
             img = template.copy()
             draw = ImageDraw.Draw(img)
             
-            # Calculate positions using custom Y positions
-            name_position = get_centered_position(name, font, name_y_position, template_width)
-            business_position = get_centered_position(f"({business})", font, business_y_position, template_width)
+            name_position = get_centered_position(name, font, positions['name_y'], template.width)
+            business_position = get_centered_position(f"({business})", font, positions['business_y'], template.width)
             
-            # Draw text with stroke for extra boldness if using default font
             if font == ImageFont.load_default():
-                # Draw text multiple times with slight offsets for bold effect
                 for offset in [(0, 0), (0, 1), (1, 0), (1, 1)]:
                     x, y = name_position
                     draw.text((x + offset[0], y + offset[1]), name, fill="black", font=font)
                     x, y = business_position
                     draw.text((x + offset[0], y + offset[1]), f"({business})", fill="black", font=font)
             else:
-                # Draw text normally if using a bold font
                 draw.text(name_position, name, fill="black", font=font)
                 draw.text(business_position, f"({business})", fill="black", font=font)
             
-            # Save image
             output_file = os.path.join(output_dir, f"{name.replace(' ', '_')}_birthday.png")
             img.save(output_file)
             
-            # Update progress
             progress_bar.progress((i + 1) / len(df))
         
-        # Create zip file
         with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for root, dirs, files in os.walk(output_dir):
                 for file in files:
@@ -145,13 +87,15 @@ if 'zip_buffer' not in st.session_state:
     st.session_state.zip_buffer = None
 if 'generated' not in st.session_state:
     st.session_state.generated = False
-if 'template_height' not in st.session_state:
-    st.session_state.template_height = 0
+if 'template_positions' not in st.session_state:
+    st.session_state.template_positions = []
+if 'templates' not in st.session_state:
+    st.session_state.templates = []
 
 # Set page config
-st.set_page_config(page_title="Birthday Card Generator", layout="wide")
+st.set_page_config(page_title="Multi-template Birthday Card Generator", layout="wide")
 
-# Add custom CSS for better styling
+# Add custom CSS
 st.markdown("""
     <style>
     .stButton>button {
@@ -164,115 +108,105 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Main title with styling
-st.title("🎂 Birthday Card Generator")
+st.title("🎂 Multi-template Birthday Card Generator")
 
-# Create two columns for uploads
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown('<p class="upload-text">1. Upload Excel File</p>', unsafe_allow_html=True)
-    excel_file = st.file_uploader(
-        "Must include 'Owner Name' and 'Business Name' columns",
-        type=['xlsx']
-    )
+# Excel file upload
+st.markdown('<p class="upload-text">1. Upload Excel File</p>', unsafe_allow_html=True)
+excel_file = st.file_uploader(
+    "Must include 'Owner Name' and 'Business Name' columns",
+    type=['xlsx']
+)
 
-with col2:
-    st.markdown('<p class="upload-text">2. Upload Template Image</p>', unsafe_allow_html=True)
-    template_image = st.file_uploader(
-        "Select your birthday card template",
-        type=['png', 'jpg', 'jpeg']
-    )
-# Update template height when image is uploaded
-if template_image:
-    img = Image.open(template_image)
-    st.session_state.template_height = img.height
+# Multiple template upload
+st.markdown('<p class="upload-text">2. Upload Template Images</p>', unsafe_allow_html=True)
+template_files = st.file_uploader(
+    "Select your birthday card templates (multiple files allowed)",
+    type=['png', 'jpg', 'jpeg'],
+    accept_multiple_files=True
+)
 
-# Create two columns for adjustments
-col1, col2 = st.columns(2)
+# Font size adjustment
+st.markdown("##### Font Size")
+font_size = st.slider("Adjust font size", min_value=10, max_value=150, value=25)
 
-with col1:
-    st.markdown("##### Font Size")
-    font_size = st.slider("Adjust font size", min_value=10, max_value=150, value=25)
-
-# Ensure template height is not 0
-if template_image:
-    try:
-        img = Image.open(template_image)
-        st.session_state.template_height = img.height
-        
-        with col2:
-            st.markdown("##### Name Position")
-            name_y_position = st.slider(
-                "Adjust name vertical position",
-                min_value=0,
-                max_value=st.session_state.template_height,
-                value=590 if st.session_state.template_height > 590 else st.session_state.template_height // 2
-            )
-
-            st.markdown("##### Business Name Position")
-            business_y_position = st.slider(
-                "Adjust business name vertical position",
-                min_value=0,
-                max_value=st.session_state.template_height,
-                value=700 if st.session_state.template_height > 700 else st.session_state.template_height // 2
-            )
-
-        # Preview the adjustments on the template image
-        template = Image.open(template_image)
-        font = load_bold_font(font_size)
-        preview_image = preview_template(
-            template, 
-            "Happy Birthday", 
-            "My Business", 
-            font, 
-            name_y_position, 
-            business_y_position
-        )
-        st.image(preview_image, caption="Preview of the Template", width=600)  # Set a fixed width for smaller preview
+# Template position adjustments
+if template_files:
+    st.session_state.templates = []
+    st.session_state.template_positions = []
     
-    except Exception as e:
-        st.error(f"Error reading template image: {str(e)}")
-else:
-    with col2:
-        st.warning("Please upload a valid template image to enable position sliders.")
+    for i, template_file in enumerate(template_files):
+        st.markdown(f"##### Template {i+1} Positions")
+        col1, col2 = st.columns(2)
+        
+        try:
+            img = Image.open(template_file)
+            st.session_state.templates.append(img)
+            
+            with col1:
+                name_y = st.slider(
+                    f"Name position (Template {i+1})",
+                    min_value=0,
+                    max_value=img.height,
+                    value=590 if img.height > 590 else img.height // 2,
+                    key=f"name_{i}"
+                )
+            
+            with col2:
+                business_y = st.slider(
+                    f"Business position (Template {i+1})",
+                    min_value=0,
+                    max_value=img.height,
+                    value=700 if img.height > 700 else img.height // 2,
+                    key=f"business_{i}"
+                )
+            
+            st.session_state.template_positions.append({
+                'name_y': name_y,
+                'business_y': business_y
+            })
+            
+            # Preview
+            font = load_bold_font(font_size)
+            preview_image = preview_template(
+                img,
+                "Happy Birthday",
+                "My Business",
+                font,
+                {'name_y': name_y, 'business_y': business_y}
+            )
+            st.image(preview_image, caption=f"Preview of Template {i+1}", width=400)
+            
+        except Exception as e:
+            st.error(f"Error processing template {i+1}: {str(e)}")
 
-
-# Create button to generate birthday cards
-if excel_file and template_image:
+# Generate button
+if excel_file and template_files:
     if st.button("Generate Birthday Cards"):
         try:
-            # Read Excel data
             df = pd.read_excel(excel_file)
             
-            # Validate columns
             required_columns = {'Owner Name', 'Business Name'}
             if not required_columns.issubset(df.columns):
                 missing_cols = required_columns - set(df.columns)
                 st.error(f"Missing required columns: {', '.join(missing_cols)}")
                 st.stop()
             
-            # Load template
-            template = Image.open(template_image)
-            
-            # Generate cards and store in session state
             zip_buffer = generate_birthday_cards(
-                df, 
-                template, 
-                font_size, 
-                name_y_position, 
-                business_y_position
+                df,
+                st.session_state.templates,
+                font_size,
+                st.session_state.template_positions
             )
             st.session_state.zip_buffer = zip_buffer.getvalue()
             st.session_state.generated = True
             
-            # Success message
             st.success("✅ All cards generated successfully!")
-
+            
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
             st.stop()
 
-# Download button (only shows if cards have been generated)
+# Download button
 if st.session_state.generated and st.session_state.zip_buffer:
     st.download_button(
         label="📥 Download Birthday Cards",
@@ -281,7 +215,7 @@ if st.session_state.generated and st.session_state.zip_buffer:
         mime="application/zip"
     )
 
-# Instructions section
+# Updated instructions
 st.markdown("""
 ---
 ### 📝 Instructions
@@ -290,16 +224,21 @@ st.markdown("""
    - Must contain columns 'Owner Name' and 'Business Name'
    - File should be in .xlsx format
 
-2. **Upload Template Image**
-   - Supported formats: PNG, JPG, JPEG
-   - Make sure the template has space for the text
+2. **Upload Template Images**
+   - Upload multiple templates (PNG, JPG, JPEG)
+   - Templates will be used in sequence (cycling through them)
+   - For example, with 3 templates:
+     * First person gets template 1
+     * Second person gets template 2
+     * Third person gets template 3
+     * Fourth person gets template 1 again, and so on
 
-3. **Adjust Font Size**
-   - Use the slider to adjust text size as needed
+3. **Adjust Settings for Each Template**
+   - Set font size (applies to all templates)
+   - Adjust name and business positions for each template individually
+   - Preview shows how text will appear on each template
 
-4. **Generate Cards**
+4. **Generate and Download**
    - Click "Generate Birthday Cards" to create all cards
-
-5. **Download**
-   - Once generated, click "Download Birthday Cards" to get the ZIP file
+   - Download the ZIP file containing all generated cards
 """)
