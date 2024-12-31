@@ -117,7 +117,7 @@ def generate_birthday_cards(df, templates, font_size, template_positions):
                 draw.text(name_position, name, fill="black", font=font)
                 draw.text(business_position, f"({business})", fill="black", font=font)
             
-            output_file = os.path.join(output_dir, f"{business.replace(' ', '_')}_birthday.png")
+            output_file = os.path.join(output_dir, f"{business.replace(' ', '_')}.png")
             img.save(output_file)
             
             progress_bar.progress((i + 1) / len(df))
@@ -158,7 +158,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🎂 Multi-template Birthday Card Generator")
+st.title("🎂 Multi-template Card Generator")
 
 # Excel file upload
 st.markdown('<p class="upload-text">1. Upload Excel File</p>', unsafe_allow_html=True)
@@ -261,7 +261,7 @@ if st.session_state.generated and st.session_state.zip_buffer:
     st.download_button(
         label="📥 Download Birthday Cards",
         data=st.session_state.zip_buffer,
-        file_name="birthday_cards.zip",
+        file_name="Multiple_cards.zip",
         mime="application/zip"
     )
 
