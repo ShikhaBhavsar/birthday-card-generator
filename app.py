@@ -175,11 +175,13 @@ template_files = st.file_uploader(
     accept_multiple_files=True
 )
 
-# Font size adjustment
+# Font size adjustment - both slider and manual input
 st.markdown("##### Font Size")
-font_size = st.slider("Adjust font size", min_value=10, max_value=150, value=25)
+font_size_slider = st.slider("Adjust font size", min_value=10, max_value=150, value=25)
+font_size_manual = st.number_input("Or enter font size manually", min_value=10, max_value=150, value=font_size_slider)
+font_size = font_size_manual if font_size_manual else font_size_slider
 
-# Template position adjustments
+# Template position adjustments - both slider and manual input
 if template_files:
     st.session_state.templates = []
     st.session_state.template_positions = []
@@ -193,26 +195,28 @@ if template_files:
             st.session_state.templates.append(img)
             
             with col1:
-                name_y = st.slider(
+                name_y_slider = st.slider(
                     f"Name position (Template {i+1})",
                     min_value=0,
                     max_value=img.height,
                     value=590 if img.height > 590 else img.height // 2,
                     key=f"name_{i}"
                 )
+                name_y_manual = st.number_input(f"Or enter Name position (Template {i+1})", min_value=0, max_value=img.height, value=name_y_slider)
             
             with col2:
-                business_y = st.slider(
+                business_y_slider = st.slider(
                     f"Business position (Template {i+1})",
                     min_value=0,
                     max_value=img.height,
                     value=700 if img.height > 700 else img.height // 2,
                     key=f"business_{i}"
                 )
+                business_y_manual = st.number_input(f"Or enter Business position (Template {i+1})", min_value=0, max_value=img.height, value=business_y_slider)
             
             st.session_state.template_positions.append({
-                'name_y': name_y,
-                'business_y': business_y
+                'name_y': name_y_manual,
+                'business_y': business_y_manual
             })
             
             # Preview
@@ -222,7 +226,7 @@ if template_files:
                 "Happy Birthday",
                 "My Business",
                 font,
-                {'name_y': name_y, 'business_y': business_y}
+                {'name_y': name_y_manual, 'business_y': business_y_manual}
             )
             st.image(preview_image, caption=f"Preview of Template {i+1}", width=400)
             
